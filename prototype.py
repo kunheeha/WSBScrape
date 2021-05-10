@@ -1,27 +1,20 @@
-import praw
-from transformers import pipeline
-from bs4 import BeautifulSoup
+import os
+from dotenv import load_dotenv
 import requests
-summarizer = pipeline('summarization')
-source = requests.get('https://stockanalysis.com/stocks/').text
+import praw
+from bs4 import BeautifulSoup
+from transformers import pipeline
 
-soup = BeautifulSoup(source, 'lxml')
-namelist = soup.find('ul', class_='no-spacing').find_all('li')
+
+#loading dotenv variables
+load_dotenv()
+
+# summarizer currently commented out to speed up testing other features
+# summarizer = pipeline('summarization')
+
 
 stocknames = []
-
-for stockname in namelist:
-    stocknames.append(stockname.a.text.split(' ')[0])
-
 stock_appearances = {}
-
-
-reddit = praw.Reddit(
-    client_id='s6J21wKb690M-g',
-    client_secret='63ZRbmPvp6aMfy2GenYBZNrHBiCckA',
-    user_agent='macos:prawpractice:v1.0 (by u/kunheehadev)'
-)
-
 
 def check_appearance(text, stockslist, appearancelist):
     for word in text.split(' '):
@@ -32,6 +25,21 @@ def check_appearance(text, stockslist, appearancelist):
                 else:
                     appearancelist[stock] += 1
 
+# Scraping all stock names
+source = requests.get('https://stockanalysis.com/stocks/').text
+soup = BeautifulSoup(source, 'lxml')
+namelist = soup.find('ul', class_='no-spacing').find_all('li')
+
+for stockname in namelist:
+    stocknames.append(stockname.a.text.split(' ')[0])
+
+
+# Scraping r/wallstreetbets
+reddit = praw.Reddit(
+    client_id=os.getenv('CLIENT_ID'),
+    client_secret=os.getenv('CLIENT_SECRET'),
+    user_agent='macos:prawpractice:v1.0 (by u/kunheehadev)'
+)
 
 wallstreetbets = reddit.subreddit('wallstreetbets').hot(limit=4)
 
